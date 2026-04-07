@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A2 Verb Trainer</title>
+<style>
+body { font-family: Arial, sans-serif; background:#f5f7fb; margin:0; padding:18px; text-align:center; }
+h1 { font-size:28px; margin-bottom:6px; }
+p { color:#5b6674; margin-top:0; }
+.top button, .controls button { padding:12px 16px; margin:6px; font-size:16px; border-radius:10px; border:1px solid #d9e1ea; background:white; }
+.top button.active { background:#2457ff; color:white; border-color:#2457ff; }
+.card { background:white; border:1px solid #d9e1ea; border-radius:16px; padding:28px 18px; max-width:420px; margin:18px auto; box-shadow:0 8px 24px rgba(20,40,80,.06); }
+#cardWord { font-size:38px; margin:8px 0 16px; }
+#cardAnswer { font-size:24px; color:#2457ff; min-height:32px; }
+#matchBoard { max-width:760px; margin:0 auto; }
+.cols { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.col { display:flex; flex-direction:column; gap:10px; }
+.matchBtn { padding:14px 12px; min-height:58px; font-size:22px; border-radius:12px; border:1px solid #cfd8e3; background:white; }
+.matchBtn.selected { outline:3px solid #2457ff; }
+#matchFeedback { min-height:28px; font-weight:bold; margin-top:12px; }
+@media (max-width: 650px) {
+  .cols { grid-template-columns:1fr 1fr; gap:12px; }
+  .matchBtn { font-size:20px; padding:14px 8px; }
+  #cardWord { font-size:34px; }
+  #cardAnswer { font-size:22px; }
+}
+</style>
+</head>
+<body>
+<h1>A2 Spanish Verb Trainer</h1>
+<p>Improved version: fixed matching behaviour and expanded verb list.</p>
+
+<div class="top">
+  <button id="tabFlash" class="active" onclick="switchMode('flash')">Flashcards</button>
+  <button id="tabMatch" onclick="switchMode('match')">Match the verbs</button>
+</div>
+
+<div id="flashMode">
+  <div class="card">
+    <div id="cardWord"></div>
+    <div id="cardAnswer"></div>
+    <div class="controls">
+      <button onclick="reveal()">Reveal</button>
+      <button onclick="nextFlash()">Next</button>
+    </div>
+  </div>
+</div>
+
+<div id="matchMode" style="display:none;">
+  <div id="matchBoard">
+    <div class="cols">
+      <div id="leftCol" class="col"></div>
+      <div id="rightCol" class="col"></div>
+    </div>
+    <div id="matchFeedback"></div>
+  </div>
+</div>
+
+<script>
+const data = [{"es": "Ir", "en": "to go"}, {"es": "Decir", "en": "to say"}, {"es": "Contar", "en": "to tell / count"}, {"es": "Hacer", "en": "to do / make"}, {"es": "Cocinar", "en": "to cook"}, {"es": "Doler", "en": "to hurt"}, {"es": "Abrir", "en": "to open"}, {"es": "Cerrar", "en": "to close"}, {"es": "Comer", "en": "to eat"}, {"es": "Beber", "en": "to drink"}, {"es": "Quedar", "en": "to stay / meet"}, {"es": "Quedar(se)", "en": "to stay / remain"}, {"es": "Levantar(se)", "en": "to get up / stand up"}, {"es": "Acostar(se)", "en": "to go to bed / put to bed"}, {"es": "Dormir(se)", "en": "to sleep / fall asleep"}, {"es": "Investigar", "en": "to investigate"}, {"es": "Descubrir", "en": "to discover"}, {"es": "Conocer", "en": "to know / meet"}, {"es": "Trabajar", "en": "to work"}, {"es": "Secuestrar", "en": "to kidnap"}, {"es": "Llegar", "en": "to arrive"}, {"es": "Gustar", "en": "to like / please"}, {"es": "Poner(se)", "en": "to put on / get"}, {"es": "Explicar", "en": "to explain"}, {"es": "Suspender", "en": "to fail (an exam) / suspend"}, {"es": "Pensar", "en": "to think"}, {"es": "Resolver", "en": "to solve"}, {"es": "Contratar", "en": "to hire"}, {"es": "Hablar", "en": "to speak / talk"}, {"es": "Coger", "en": "to take"}, {"es": "Adelantar", "en": "to overtake / move ahead"}, {"es": "Faltar", "en": "to be missing / lack"}, {"es": "Picar", "en": "to sting / itch / snack"}, {"es": "Reaccionar", "en": "to react"}, {"es": "Invertir", "en": "to invest"}, {"es": "Saber", "en": "to know"}, {"es": "Recibir", "en": "to receive"}, {"es": "Pagar", "en": "to pay"}, {"es": "Durar", "en": "to last"}, {"es": "Elegir", "en": "to choose"}, {"es": "Ahorrar", "en": "to save"}, {"es": "Poder", "en": "can / to be able to"}, {"es": "Preferir", "en": "to prefer"}, {"es": "Bajar", "en": "to go down / download"}, {"es": "Subir", "en": "to go up / upload"}, {"es": "Buscar", "en": "to look for"}, {"es": "Querer", "en": "to want / love"}, {"es": "Guardar", "en": "to save / keep"}, {"es": "Responder", "en": "to answer"}, {"es": "Sentir", "en": "to feel / be sorry"}, {"es": "Saludar", "en": "to greet / say hello"}, {"es": "Comenzar", "en": "to begin"}, {"es": "Empezar", "en": "to start"}, {"es": "Compartir", "en": "to share"}, {"es": "Comprar", "en": "to buy"}, {"es": "Vender", "en": "to sell"}, {"es": "Ver", "en": "to see"}, {"es": "Necesitar", "en": "to need"}, {"es": "Dar", "en": "to give"}, {"es": "Creer", "en": "to believe"}, {"es": "Llevar", "en": "to carry / wear / take"}, {"es": "Usar", "en": "to use"}, {"es": "Recordar", "en": "to remember"}, {"es": "Recomendar", "en": "to recommend"}, {"es": "Esperar", "en": "to wait / hope"}, {"es": "Perder", "en": "to lose / miss"}, {"es": "Pedir", "en": "to ask for / order"}, {"es": "Escribir", "en": "to write"}, {"es": "Estar", "en": "to be"}, {"es": "Ser", "en": "to be"}, {"es": "Llover", "en": "to rain"}, {"es": "Llamar", "en": "to call"}, {"es": "Conversar", "en": "to chat / converse"}, {"es": "Traer", "en": "to bring"}, {"es": "Quejar(se)", "en": "to complain"}, {"es": "Ganar", "en": "to win / earn"}, {"es": "Caer", "en": "to fall"}, {"es": "Costar", "en": "to cost / be difficult"}];
+let current = null;
+
+function randItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function shuffle(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function switchMode(mode) {
+  document.getElementById('flashMode').style.display = mode === 'flash' ? 'block' : 'none';
+  document.getElementById('matchMode').style.display = mode === 'match' ? 'block' : 'none';
+  document.getElementById('tabFlash').classList.toggle('active', mode === 'flash');
+  document.getElementById('tabMatch').classList.toggle('active', mode === 'match');
+  if (mode === 'flash') nextFlash();
+  if (mode === 'match') startMatch();
+}
+
+function nextFlash() {
+  current = randItem(data);
+  document.getElementById('cardWord').innerText = current.es;
+  document.getElementById('cardAnswer').innerText = '';
+}
+
+function reveal() {
+  document.getElementById('cardAnswer').innerText = current.en;
+}
+
+let activePairs = [];
+let rightOrder = [];
+let selectedLeft = null;
+
+function uniqueRandomPairs(n) {
+  return shuffle(data).slice(0, n);
+}
+
+function startMatch() {
+  activePairs = uniqueRandomPairs(5);
+  rightOrder = shuffle(activePairs);
+  selectedLeft = null;
+  renderMatch();
+}
+
+function renderMatch() {
+  const left = document.getElementById('leftCol');
+  const right = document.getElementById('rightCol');
+  left.innerHTML = '';
+  right.innerHTML = '';
+
+  activePairs.forEach(pair => {
+    const btn = document.createElement('button');
+    btn.className = 'matchBtn' + (selectedLeft && selectedLeft.es === pair.es ? ' selected' : '');
+    btn.innerText = pair.es;
+    btn.onclick = () => {
+      selectedLeft = pair;
+      document.getElementById('matchFeedback').innerText = '';
+      renderMatch();
+    };
+    left.appendChild(btn);
+  });
+
+  rightOrder.forEach(pair => {
+    const btn = document.createElement('button');
+    btn.className = 'matchBtn';
+    btn.innerText = pair.en;
+    btn.onclick = () => checkMatch(pair);
+    right.appendChild(btn);
+  });
+}
+
+function pickReplacement(excludeEs) {
+  const used = new Set(activePairs.map(x => x.es));
+  let candidates = data.filter(x => !used.has(x.es) && x.es !== excludeEs);
+  if (!candidates.length) candidates = data.filter(x => x.es !== excludeEs);
+  return randItem(candidates);
+}
+
+function checkMatch(rightPair) {
+  if (!selectedLeft) {
+    document.getElementById('matchFeedback').innerText = 'First tap a Spanish verb on the left.';
+    return;
+  }
+
+  if (selectedLeft.es === rightPair.es) {
+    document.getElementById('matchFeedback').innerText = '✓ Correct';
+    const matchedEs = selectedLeft.es;
+    activePairs = activePairs.filter(x => x.es !== matchedEs);
+    rightOrder = rightOrder.filter(x => x.es !== matchedEs);
+    selectedLeft = null;
+    renderMatch();
+
+    setTimeout(() => {
+      const replacement = pickReplacement(matchedEs);
+      activePairs.push(replacement);
+      rightOrder.push(replacement);
+      rightOrder = shuffle(rightOrder);
+      renderMatch();
+    }, 1000);
+  } else {
+    document.getElementById('matchFeedback').innerText = '✗ Try again';
+    selectedLeft = null;
+    renderMatch();
+  }
+}
+
+nextFlash();
+</script>
+</body>
+</html>
